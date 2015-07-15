@@ -11,7 +11,7 @@ class WabbitServer(LineReceiver):
 
     def lineReceived(self, line):
         now = int(time())
-        if now - self.now == 1:
+        if now - self.now >= 1:
             self.now = now
             count, self.count = self.count, 0
             print count
