@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
 )
 parser.add_argument("-V", "--version", action="version", version=__version__)
+parser.add_argument("-q", "--queries")
 parser.add_argument(
     "endpoint",
     help="the endpoint to listen on for URLs",
@@ -26,8 +27,18 @@ parser.add_argument(
 
 class BenchmarkClient(LineReceiver):
     def lineReceived(self, line):
-        assert line == "received"
-        self.sendLine("request")
+        #assert line == "received"
+        print line
+        self.sendLine(self.lineiterator.next())
+
+
+def replay_file(filename):
+    linecount = 0
+    while True:
+        with open(filename) as f:
+            for line in f:
+                yield line.rstrip()
+                linecount += 1
 
 
 def main(reactor=reactor):
@@ -37,7 +48,11 @@ def main(reactor=reactor):
         description=arguments["endpoint"],
     )
 
-    connectProtocol(endpoint, BenchmarkClient()).addCallback(
-        lambda protocol : protocol.sendLine("request"),
+    lines = iter(replay_file(arguments["queries"]))
+
+    client = BenchmarkClient()
+    client.lineiterator = lines
+    connectProtocol(endpoint, client).addCallback(
+        lambda protocol : protocol.sendLine(lines.next()),
     )
     reactor.run()
